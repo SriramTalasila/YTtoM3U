@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"
+        integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+
+    <title>YttoM3U</title>
+</head>
+
+<body>
+
+    <div class="w3-bar w3-black">
+        <a href="/" class="w3-bar-item w3-button">Home</a>
+
+    </div>
+
+    <div>
+
+        <div>
+            <form id="add_channel_form" class="w3-container w3-card-4">
+                <br>
+                <p>
+                    <label class="w3-text-grey"> Channel Name</label>
+                    <input class="w3-input w3-border" name="channel_name" type="text" required="">
+                </p>
+                <p>
+                    <label class="w3-text-grey">Source Url</label>
+                    <input class="w3-input w3-border" name="src_url" type="text" required="">
+                </p>
+                <p>
+                    <label class="w3-text-grey">Image url</label>
+                    <input class="w3-input w3-border" name="img_url" type="text" required="">
+                </p>
+                <p>
+                    <label class="w3-text-grey">Group type</label>
+                    <input class="w3-input w3-border" name="grp_type" type="text" required="">
+                </p>
+                <div class="w3-row">
+                    <div class="w3-half">
+                        <input id="isyoutube" class="w3-check" type="checkbox" name="is_youtube">
+                        <label>Is Youtube</label>
+                        <br>
+                    </div>
+                </div>
+                <p><button type="button" class="w3-btn w3-padding w3-teal" id="add" onclick="add_channel()"
+                        style="width:120px">Add Channel &nbsp; ❯</button>
+                </p>
+                <p><button type="button" class="w3-btn w3-padding w3-blue" id="edit" onclick="edit_channel()"
+                        style="width:120px">Edit Channel &nbsp; ❯</button>
+                </p>
+            </form>
+        </div>
+
+        <div class="w3-responsive">
+            <table class="w3-table-all">
+                <thead>
+                    <tr class="w3-light-grey w3-hover-red">
+                        <th>Channel Id</th>
+                        <th>Name</th>
+                        <th>Source Url</th>
+                        <th>Is Youtube</th>
+                        <th>Expiry</th>
+                        <th>Is Streaming Available</th>
+                        <th>group</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+    <script>
+        $(document).ready(() => {
+            get_channels_list();
+        })
+
+        function add_channel() {
+            var json = objectifyForm($('#add_channel_form').serializeArray());
+            console.log((json));
+            $.post('/add_channel', json, (data) => {
+                alert("Data added");
+                get_channels_list();
+                $(':input', '#add_channel_form')
+                    .not(':button, :submit, :reset, :hidden')
+                    .val('')
+                    .prop('checked', false)
+                    .prop('selected', false);
+            })
+        }
+
+        function edit_channel() {
+
+        }
+
+        function delete_channel(id) {
+            $.ajax({
+                url: '/channel/' + id,
+                type: 'DELETE',
+                success: function (result) {
+                    alert("Channel Deleted");
+                    get_channels_list();
+                }
+            });
+
+        }
+
+        function get_channels_list() {
+            $.get('/channels', (data) => {
+                console.log(JSON.parse(JSON.stringify(data)));
+                $('tbody').empty();
+                var dataList = JSON.parse(JSON.stringify(data));
+                for (let i = 0; i < dataList.length; i++) {
+                    var isStreamingAvail = dataList[i].manifest_url ? 'Yes' : 'No';
+                    var html = '<tr><td>' + dataList[i].id + '</td>';
+                    html += '<td>' + dataList[i].title + '</td>';
+                    html += '<td>' + dataList[i].src_url + '</td>';
+                    html += '<td>' + dataList[i].is_youtube + '</td>';
+                    html += '<td>' + dataList[i].expiry + '</td>';
+                    html += '<td>' + isStreamingAvail + '</td>';
+                    html += '<td>' + dataList[i].group_type + '</td>';
+                    html += '<td><i class="fa fa-pencil-square-o" onclick="edit_channel(' + dataList[i].id + ')"</i> &nbsp;&nbsp;&nbsp;<i class="fa fa-trash" onclick="delete_channel(' + dataList[i].id + ')"></i></td></tr>';
+                    $('tbody').append(html);
+
+                }
+
+            })
+        }
+
+        function objectifyForm(formArray) {
+            //serialize data function
+            var returnArray = {};
+            for (var i = 0; i < formArray.length; i++) {
+                returnArray[formArray[i]['name']] = formArray[i]['value'];
+            }
+            return returnArray;
+        }
+    </script>
+</body>
+
+</html>
