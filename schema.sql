@@ -10,3 +10,4 @@ CREATE TABLE channels (
     is_youtube BOOLEAN NOT NULL DEFAULT false,
     tvg_img TEXT NOT NULL
 );
+
