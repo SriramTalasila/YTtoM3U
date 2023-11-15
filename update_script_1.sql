@@ -1,0 +1,1 @@
+Alter Table channels add column tvg_id TEXT;

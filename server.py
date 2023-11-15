@@ -74,14 +74,14 @@ def add_channel():
         if len(find_channel_by_name(request.form['channel_name'])) > 0 :
             return {"message":"Channel already exists"}
         else:
-            add_channel(request.form['channel_name'],request.form['src_url'],request.form['grp_type'],request.form['is_youtube'],request.form['img_url'])
+            add_channel(request.form['channel_name'],request.form['src_url'],request.form['grp_type'],request.form['is_youtube'],request.form['img_url'],request.form['tvg_id'])
         return {"message":"Channel Added Sucessfully"} 
 
 @app.route('/update_channel', methods=['POST'])
 def update_channel():
     if request.method == 'POST':
         print(request.form['channel_name'])
-        update_channel_db(request.form['id'],request.form['channel_name'],request.form['src_url'],request.form['grp_type'],request.form['is_youtube'],request.form['img_url'])
+        update_channel_db(request.form['id'],request.form['channel_name'],request.form['src_url'],request.form['grp_type'],request.form['is_youtube'],request.form['img_url'],request.form['tvg_id'])
         return {"message":"Channel Added Sucessfully"} 
 
 @app.route('/channels', methods=['GET'])
@@ -101,7 +101,8 @@ def get_channels():
                 'expiry':expiry,
                 'group_type':row['group_type'],
                 'is_youtube':row['is_youtube'],
-                'tvg_img':row['tvg_img']
+                'tvg_img':row['tvg_img'],
+                'tvg_id':row['tvg_id']
             }
             data_json.append(data)
         return data_json
@@ -152,7 +153,8 @@ def get_playlist():
                 'expiry':expiry,
                 'group_type':row['group_type'],
                 'is_youtube':row['is_youtube'],
-                'tvg_img':row['tvg_img']
+                'tvg_img':row['tvg_img'],
+                'tvg_id':row['tvg_id']
             }
             data_json.append(data)
         
@@ -176,7 +178,8 @@ def download_file():
             'expiry':expiry,
             'group_type':row['group_type'],
             'is_youtube':row['is_youtube'],
-            'tvg_img':row['tvg_img']
+            'tvg_img':row['tvg_img'],
+            'tvg_id':row['tvg_id']
         }
         data_json.append(data)
         
@@ -208,7 +211,8 @@ def download_file_v2():
             'expiry':expiry,
             'group_type':row['group_type'],
             'is_youtube':row['is_youtube'],
-            'tvg_img':row['tvg_img']
+            'tvg_img':row['tvg_img'],
+            'tvg_id':row['tvg_id']
         }
         data_json.append(data)
     # v2 generation playlist along with external  m3u file or links
@@ -245,7 +249,8 @@ def get_channel(id):
                 'expiry':row['expiry'],
                 'group_type':row['group_type'],
                 'is_youtube':row['is_youtube'],
-                'tvg_img':row['tvg_img']
+                'tvg_img':row['tvg_img'],
+                'tvg_id':row['tvg_id'],
             }
         return data
     if request.method == 'DELETE':
@@ -318,11 +323,11 @@ def delete_external_link(id):
     conn.close()
     return channel
 
-def add_channel(channel_name,src_url,group_type,is_youtube,tvg_img):
+def add_channel(channel_name,src_url,group_type,is_youtube,tvg_img,tvg_id):
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("INSERT INTO channels (title, src_url,expiry,group_type,is_youtube,tvg_img) VALUES (?,?,?,?,?,?)",
-            (channel_name,src_url,'0',group_type,True if is_youtube == 'on' else False,tvg_img)
+    cur.execute("INSERT INTO channels (title, src_url,expiry,group_type,is_youtube,tvg_img,tvg_id) VALUES (?,?,?,?,?,?,?)",
+            (channel_name,src_url,'0',group_type,True if is_youtube == 'on' else False,tvg_img,tvg_id)
             )
     conn.commit()
     conn.close()
@@ -336,11 +341,11 @@ def save_url(id,url,expiry):
     conn.close()
 
 
-def update_channel_db(id,channel_name,src_url,group_type,is_youtube,tvg_img):
+def update_channel_db(id,channel_name,src_url,group_type,is_youtube,tvg_img,tvg_id):
     conn = get_db_connection()
     cur = conn.cursor()
-    update_template = "UPDATE channels SET expiry = '0', manifest_url = NULL, title = '{channel_name_clm}', src_url = '{src_url_clm}', group_type = '{group_type_clm}', is_youtube = {is_youtube_clm}, tvg_img = '{tvg_img_clm}' WHERE id = {id_clm}"
-    update_script = update_template.format(channel_name_clm=channel_name, src_url_clm=src_url, group_type_clm=group_type, is_youtube_clm=True if is_youtube == 'on' else False, tvg_img_clm=tvg_img, id_clm=id)
+    update_template = "UPDATE channels SET expiry = '0', manifest_url = NULL, title = '{channel_name_clm}', src_url = '{src_url_clm}', group_type = '{group_type_clm}', is_youtube = {is_youtube_clm}, tvg_img = '{tvg_img_clm}',tvg_id = '{tvg_id_clm}' WHERE id = {id_clm}"
+    update_script = update_template.format(channel_name_clm=channel_name, src_url_clm=src_url, group_type_clm=group_type, is_youtube_clm=True if is_youtube == 'on' else False, tvg_img_clm=tvg_img, tvg_id_clm=tvg_id, id_clm=id)
     #print(update_script)
     cur.execute(update_script)
     conn.commit()
@@ -367,11 +372,11 @@ def update_extenal_m3u_db(id,source_name,x_tvg_url,m3u_text):
     conn.close()
 
 def generate_m3u_playlist(channels):
-    playlist = "#EXTM3U\n"
-    #print(channels)
+    playlist = '#EXTM3U x-tvg-url="https://www.tsepg.cf/epg.xml.gz"\n'
+    print(channels)
     for channel in channels:
         playlist += "#EXTINF:-1 tvg-id=\"{}\" tvg-logo=\"{}\" group-title=\"{}\",{}\n".format(
-            channel['title'], channel['tvg_img'], channel['group_type'], channel['title']
+            channel['tvg_id'], channel['tvg_img'], channel['group_type'], channel['title']
         )
         if channel['is_youtube'] == 1:
             playlist += request.host_url +'stream/channel?id='+str(channel['id'])+ '\n'
